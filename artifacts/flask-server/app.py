@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
+app.config['PROPAGATE_EXCEPTIONS'] = True
 CORS(app)
 
 VISION_API_KEY = os.environ.get("GOOGLE_CLOUD_VISION_API_KEY")
@@ -236,7 +237,6 @@ def extract_insurance():
         "raw_text": text,
     })
 
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
