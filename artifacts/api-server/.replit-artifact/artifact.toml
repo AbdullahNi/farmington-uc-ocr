@@ -5,12 +5,12 @@ version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
 [[services]]
-localPort = 8080
+localPort = 8099
 name = "Flask ID Extractor Server"
 paths = ["/"]
 
 [services.development]
-run = "python3 /home/runner/workspace/artifacts/flask-server/app.py"
+run = "PORT=8099 python3 /home/runner/workspace/artifacts/flask-server/app.py"
 
 [services.production]
 
