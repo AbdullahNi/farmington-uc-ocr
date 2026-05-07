@@ -208,7 +208,32 @@ def extract_insurance():
         "raw_text": text,
     })
 
-
+@app.route("/test")
+def test_page():
+    return '''
+<!DOCTYPE html>
+<html>
+<body>
+<h2>OCR Test</h2>
+<input type="file" id="file" accept="image/*"><br><br>
+<button onclick="test('extract-id')">Test ID</button>
+<button onclick="test('extract-insurance')">Test Insurance</button>
+<pre id="result"></pre>
+<script>
+async function test(endpoint) {
+  const file = document.getElementById("file").files[0];
+  if (!file) return alert("Select an image first");
+  const form = new FormData();
+  form.append("image", file);
+  const r = await fetch("/" + endpoint, {method:"POST", body:form});
+  const data = await r.json();
+  document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+}
+</script>
+</body>
+</html>
+'''
+    
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
