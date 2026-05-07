@@ -1,5 +1,5 @@
 kind = "api"
-previewPath = "/api"
+previewPath = "/"
 title = "Flask ID Extractor Server"
 version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
@@ -10,12 +10,12 @@ name = "Flask ID Extractor Server"
 paths = ["/"]
 
 [services.development]
-run = "python3 artifacts/flask-server/app.py"
+run = "python3 /home/runner/workspace/artifacts/flask-server/app.py"
 
 [services.production]
 
 [services.production.run]
-args = ["gunicorn", "--workers", "2", "--bind", "0.0.0.0:8080", "--timeout", "120", "--chdir", "artifacts/flask-server", "app:app"]
+args = ["gunicorn", "--workers", "2", "--bind", "0.0.0.0:8080", "--timeout", "120", "--chdir", "/home/runner/workspace/artifacts/flask-server", "app:app"]
 
 [services.production.run.env]
 PORT = "8080"
