@@ -6,8 +6,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-app.config['PROPAGATE_EXCEPTIONS'] = True
-CORS(app)
+app.config['SERVER_NAME'] = None
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 VISION_API_KEY = os.environ.get("GOOGLE_CLOUD_VISION_API_KEY")
 VISION_API_URL = "https://vision.googleapis.com/v1/images:annotate"
