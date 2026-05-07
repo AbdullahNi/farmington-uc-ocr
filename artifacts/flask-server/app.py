@@ -54,29 +54,15 @@ def parse_id_fields(text):
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     result = {"full_name": None, "date_of_birth": None, "address": None}
 
-    dob_pattern = re.compile(
-        r"(?:dob|date\s+of\s+birth|birth\s*date)[:\s]*"
-        r"(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})",
-        re.IGNORECASE,
-    )
-    bare_date = re.compile(r"\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\b")
-    zip_pattern = re.compile(r"\b\d{5}(?:-\d{4})?\b")
-    address_keywords = re.compile(
-        r"\b(?:ave|st|rd|dr|ln|blvd|ct|pl|hwy|way|street|avenue|road|drive)\b",
-        re.IGNORECASE,
-    )
-    all_caps_name = re.compile(r"^[A-Z]{2,}(?:\s+[A-Z]{2,}){1,4}$")
+    # Extract DOB - look for "DOB" label first
+    dob_labeled = re.compile(r"DOB\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})", re.IGNORECASE)
+    bare_date = re.compile(r"\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b")
 
     for line in lines:
-        if result["date_of_birth"] is None:
-            m = dob_pattern.search(line)
-            if m:
-                result["date_of_birth"] = m.group(1)
-
-        if result["address"] is None and (
-            address_keywords.search(line) or zip_pattern.search(line)
-        ):
-            result["address"] = line
+        m = dob_labeled.search(line)
+        if m:
+            result["date_of_birth"] = m.group(1)
+            break
 
     if result["date_of_birth"] is None:
         for line in lines:
@@ -85,22 +71,52 @@ def parse_id_fields(text):
                 result["date_of_birth"] = m.group(1)
                 break
 
-    for line in lines[:10]:
-        if all_caps_name.match(line):
-            result["full_name"] = line.title()
+    # Extract address - look for street number pattern then city state zip
+    street_pattern = re.compile(r"^\d{3,6}\s+[A-Z]", re.IGNORECASE)
+    city_state_zip = re.compile(r"[A-Z\s]+,\s*MI\s+\d{5}", re.IGNORECASE)
+
+    for i, line in enumerate(lines):
+        if street_pattern.match(line):
+            address = line
+            if i + 1 < len(lines) and city_state_zip.search(lines[i + 1]):
+                address = address + ", " + lines[i + 1]
+            result["address"] = address
             break
 
     if result["address"] is None:
-        for i, line in enumerate(lines):
-            if zip_pattern.search(line):
-                parts = [line]
-                if i > 0:
-                    parts = [lines[i - 1]] + parts
-                result["address"] = " ".join(parts)
+        for line in lines:
+            if city_state_zip.search(line):
+                result["address"] = line
                 break
 
-    return result
+    # Extract name - look for NAME label or consecutive all-caps short lines
+    name_label = re.compile(r"^NAME$", re.IGNORECASE)
+    all_caps_word = re.compile(r"^[A-Z]{2,20}$")
 
+    for i, line in enumerate(lines):
+        if name_label.match(line) and i + 1 < len(lines):
+            name_parts = []
+            for j in range(i + 1, min(i + 4, len(lines))):
+                if all_caps_word.match(lines[j]):
+                    name_parts.append(lines[j])
+                else:
+                    break
+            if name_parts:
+                result["full_name"] = " ".join(name_parts).title()
+                break
+
+    if result["full_name"] is None:
+        name_candidates = []
+        for line in lines:
+            if all_caps_word.match(line) and len(line) > 2:
+                name_candidates.append(line)
+            elif name_candidates:
+                if len(name_candidates) >= 2:
+                    result["full_name"] = " ".join(name_candidates).title()
+                    break
+                name_candidates = []
+
+    return result
 
 def parse_insurance_fields(text):
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
