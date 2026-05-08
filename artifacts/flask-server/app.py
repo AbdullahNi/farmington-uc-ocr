@@ -56,16 +56,15 @@ def parse_id_fields(text):
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     result = {"full_name": None, "date_of_birth": None, "address": None}
 
-    # Extract DOB - look for "DOB" label first
-    dob_labeled = re.compile(r"DOB\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})", re.IGNORECASE)
-    bare_date = re.compile(r"\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b")
+    # DOB - look for labeled DOB first
+    dob_labeled = re.compile(r'DOB\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})', re.IGNORECASE)
+    bare_date = re.compile(r'\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b')
 
     for line in lines:
         m = dob_labeled.search(line)
         if m:
             result["date_of_birth"] = m.group(1)
             break
-
     if result["date_of_birth"] is None:
         for line in lines:
             m = bare_date.search(line)
@@ -73,52 +72,10 @@ def parse_id_fields(text):
                 result["date_of_birth"] = m.group(1)
                 break
 
-    # Extract address - look for street number pattern then city state zip
-    street_pattern = re.compile(r"^\d{3,6}\s+[A-Z]", re.IGNORECASE)
-    city_state_zip = re.compile(r"[A-Z\s]+,\s*MI\s+\d{5}", re.IGNORECASE)
-
-    for i, line in enumerate(lines):
-        if street_pattern.match(line):
-            address = line
-            if i + 1 < len(lines) and city_state_zip.search(lines[i + 1]):
-                address = address + ", " + lines[i + 1]
-            result["address"] = address
-            break
-
-    if result["address"] is None:
-        for line in lines:
-            if city_state_zip.search(line):
-                result["address"] = line
-                break
-
-    # Extract name - look for NAME label or consecutive all-caps short lines
-    name_label = re.compile(r"^NAME$", re.IGNORECASE)
-    all_caps_word = re.compile(r"^[A-Z]{2,20}$")
-
-    for i, line in enumerate(lines):
-        if name_label.match(line) and i + 1 < len(lines):
-            name_parts = []
-            for j in range(i + 1, min(i + 4, len(lines))):
-                if all_caps_word.match(lines[j]):
-                    name_parts.append(lines[j])
-                else:
-                    break
-            if name_parts:
-                result["full_name"] = " ".join(name_parts).title()
-                break
-
-    if result["full_name"] is None:
-        name_candidates = []
-        for line in lines:
-            if all_caps_word.match(line) and len(line) > 2:
-                name_candidates.append(line)
-            elif name_candidates:
-                if len(name_candidates) >= 2:
-                    result["full_name"] = " ".join(name_candidates).title()
-                    break
-                name_candidates = []
-
-    return result
+    # Name - find best sequence of consecutive all-caps single words
+    all_caps_word = re.compile(r'^[A-Z]{3,20}$')
+    skip_words = {'ANO', 'QU', 'SHO', 'TUS', 'POT', 'AND', 'END',
+                  'REST', 'NONE', 'CLASS', 'DL', 'ISS', 'EXP', 'SEX
 
 def parse_insurance_fields(text):
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
